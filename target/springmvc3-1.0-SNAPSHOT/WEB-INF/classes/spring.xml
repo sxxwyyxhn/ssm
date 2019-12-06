@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:mybatis="http://mybatis.org/schema/mybatis-spring"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/tx
+       http://www.springframework.org/schema/tx/spring-tx.xsd
+       http://www.springframework.org/schema/aop
+       http://www.springframework.org/schema/aop/spring-aop.xsd
+        http://mybatis.org/schema/mybatis-spring
+        http://mybatis.org/schema/mybatis-spring.xsd">
+
+    <!--
+        引入配置文件
+    -->
+    <context:property-placeholder location="classpath:mysql.properties" ignore-unresolvable="true"/>
+    <!--
+        //导入数据源
+    -->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+        <property name="driverClass" value="${dirverClass}" />
+        <property name="jdbcUrl" value="${url}" />
+        <property name="user" value="${username}" />
+        <property name="password" value="${password}" />
+
+        <property name="initialPoolSize" value="${initialPoolSize}" />
+        <property name="minPoolSize" value="${minPoolSize}" />
+        <property name="maxPoolSize" value="${maxPoolSize}" />
+        <property name="acquireIncrement" value="${acquireIncrement}" />
+        <property name="maxIdleTime" value="${maxIdleTime}" />
+        <property name="idleConnectionTestPeriod" value="${idleConnectionTestPeriod}" />
+        <property name="acquireRetryAttempts" value="${acquireRetryAttempts}" />
+        <property name="maxStatements" value="${maxStatements}" />
+        <property name="numHelperThreads" value="${numHelperThreads}" />
+    </bean>
+    <!--配置事务管理器-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+    <!--配置事务-->
+    <!--配置通知-->
+
+    <tx:advice id="message" transaction-manager="transactionManager">
+        <tx:attributes>
+            <!--propagation  传播行为 isolation隔离级别-->
+            <tx:method name="select*" read-only="true" isolation="DEFAULT" propagation="SUPPORTS"/>
+            <tx:method name="insert*"  isolation="DEFAULT" propagation="SUPPORTS"/>
+            <tx:method name="update*" isolation="DEFAULT" propagation="REQUIRED"/>
+            <tx:method name="delete*" isolation="DEFAULT" propagation="REQUIRED"/>
+            <tx:method name="find*" isolation="DEFAULT" propagation="REQUIRED"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <!--进行事务配置-->
+    <aop:config>
+        <!--切点-->
+        <aop:pointcut id="qd" expression="within(com.xh.dao..*)"/>
+        <!--通知-->
+        <aop:advisor advice-ref="message" pointcut-ref="qd"></aop:advisor>
+    </aop:config>
+
+    <!-- 配置spring-mybatis整合-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <!--配置文件位置 接口和xml在不同位置时则需要配置此项-->
+        <property name="mapperLocations" value="classpath:mapper/*.xml"/>
+        <!--别名-->
+        <property name="typeAliasesPackage" value="com.xh.bean"/>
+        <property name="configLocation" value="classpath:spring_config.xml"/>
+    </bean>
+    <mybatis:scan base-package="com.xh.dao"/>
+
+
+</beans>
